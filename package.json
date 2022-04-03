@@ -1,0 +1,16 @@
+{
+  "name": "slack-daily-feedback-bot",
+  "version": "1.0.0",
+  "description": "A Slack bot to remind you to show appreciation to your peers",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "type": "module",
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@slack/bolt": "^3.11.0",
+    "dotenv": "^16.0.0"
+  }
+}
