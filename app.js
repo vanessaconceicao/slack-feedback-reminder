@@ -265,11 +265,6 @@ app.action("share-radio-action", async ({ body, ack }) => {
 
 app.action("restart-cicle", async ({ body, ack, action }) => {
   await ack();
-
-  const userId = action.value;
-  const message =
-    body.state.values["feedback-text-block"]["feedback-text-filled"].value;
-
   await sendFeedback(action, body);
 
   selecteUser(body.user);
@@ -411,7 +406,7 @@ const finishFlow = async (user) => {
   });
 };
 
-const sendMessage = async (body, userId, message) => {
+const sendMessageToSenderUser = async (body, userId, message) => {
   await app.client.chat.delete({
     channel: body.user.id,
     ts: body.message.ts,
@@ -459,17 +454,26 @@ const sendFeedback = async (action, body) => {
         PUBLIC_CHANNEL_ID
       ),
       sendFeedbackToUser(userId, senderUserId, message),
-      sendMessage(body, userId, message),
+      sendMessageToSenderUser(body, userId, message),
     ]);
   }
 
   if (share === "private") {
     await Promise.all([
       sendFeedbackToUser(userId, senderUserId, message),
-      sendMessage(body, userId, message),
+      sendMessageToSenderUser(body, userId, message),
     ]);
   }
 };
+
+app.event("team_join", async ({ event, client, logger }) => {
+  try {
+    const resp = await scheduleMessage(event.user);
+    console.log("resp", resp);
+  } catch (error) {
+    console.log(error);
+  }
+});
 // TODO: Make bot listen to user entering workspace and leaving to schedule and remove scheduled messages
 
 // TODO chek if messages will scheduled when Slack Bot is added to workspace
