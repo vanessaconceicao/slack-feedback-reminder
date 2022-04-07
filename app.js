@@ -5,6 +5,14 @@ import { getScheduleTime } from "./helper.js";
 
 config();
 
+const PUBLIC_CHANNEL_ID = process.env.SLACK_PUBLIC_CHANNEL_ID;
+
+if (!PUBLIC_CHANNEL_ID) {
+  throw new Error(
+    "You need to set the environment variable SLACK_PUBLIC_CHANNEL_ID"
+  );
+}
+
 // Initializes your app with your bot token and signing secret
 const app = new bolt.App({
   token: process.env.SLACK_BOT_TOKEN,
@@ -164,7 +172,7 @@ app.action("user-selected", async ({ body, ack }) => {
 const getFeedback = async (user, selectedUserId) => {
   await app.client.chat.postMessage({
     channel: user.id,
-    text: `What would you like to say to <@${selectedUserId}>`,
+    text: `What would you like to say to <@${selectedUserId}>?`,
     blocks: [
       {
         type: "input",
@@ -185,33 +193,31 @@ const getFeedback = async (user, selectedUserId) => {
         block_id: "feedback-options-block",
         text: {
           type: "mrkdwn",
-          text: `*Would you like to share this message with <@${selectedUserId}>?*`,
+          text: `How would you like to share your feedback?`,
         },
         accessory: {
           type: "radio_buttons",
           initial_option: {
-            value: "no-value",
+            value: "private",
             text: {
-              type: "plain_text",
-              text: "No, I want to keep this message private",
+              type: "mrkdwn",
+              text: `Share this message with <@${selectedUserId}> only`,
             },
           },
           options: [
             {
               text: {
-                type: "plain_text",
-                text: "Yes, I want to share",
-                emoji: true,
+                type: "mrkdwn",
+                text: `Share this message with <@${selectedUserId}> only`,
               },
-              value: "yes-value",
+              value: "private",
             },
             {
               text: {
-                type: "plain_text",
-                text: "No, I want to keep this message private",
-                emoji: true,
+                type: "mrkdwn",
+                text: `Share this message with <@${selectedUserId}> and in #general channel`,
               },
-              value: "no-value",
+              value: "public",
             },
           ],
           action_id: "share-radio-action",
@@ -285,9 +291,29 @@ app.action("finish-cycle", async ({ body, ack, action }) => {
   const senderUserId = body.user.id;
   const message =
     body.state.values["feedback-text-block"]["feedback-text-filled"].value;
+  const share =
+    body.state.values["feedback-options-block"]["share-radio-action"]
+      .selected_option.value;
 
-  await sendFeedbackToUser(userId, senderUserId, message);
-  await showSendGratz(body.user);
+  if (share === "public") {
+    await Promise.all([
+      sendFeedbackToPublicChannel(
+        userId,
+        senderUserId,
+        message,
+        PUBLIC_CHANNEL_ID
+      ),
+      sendFeedbackToUser(userId, senderUserId, message),
+      showSendGratz(body.user),
+    ]);
+  }
+
+  if (share === "private") {
+    await Promise.all([
+      sendFeedbackToUser(userId, senderUserId, message),
+      showSendGratz(body.user),
+    ]);
+  }
 });
 
 const sendFeedbackToUser = async (targetUserId, senderUserId, message) => {
@@ -301,6 +327,36 @@ const sendFeedbackToUser = async (targetUserId, senderUserId, message) => {
           {
             type: "mrkdwn",
             text: `<@${senderUserId}> just shared`,
+          },
+        ],
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: message,
+        },
+      },
+    ],
+  });
+};
+
+const sendFeedbackToPublicChannel = async (
+  targetUserId,
+  senderUserId,
+  message,
+  channelId
+) => {
+  await app.client.chat.postMessage({
+    channel: channelId,
+    text: message,
+    blocks: [
+      {
+        type: "context",
+        elements: [
+          {
+            type: "mrkdwn",
+            text: `<@${senderUserId}> just shared a feedback about <@${targetUserId}>`,
           },
         ],
       },
