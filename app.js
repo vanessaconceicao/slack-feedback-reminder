@@ -1,7 +1,7 @@
-import { config } from 'dotenv';
-import bolt from '@slack/bolt';
+import { config } from "dotenv";
+import bolt from "@slack/bolt";
 
-import { getScheduleTime } from './helper.js';
+import { getScheduleTime } from "./helper.js";
 
 config();
 
@@ -13,9 +13,9 @@ const app = new bolt.App({
 
 (async () => {
   // Start your app
-  await app.start(process.env.PORT || 3000);
 
-  console.log('⚡️ Bolt app is running!');
+  await app.start(process.env.PORT || 3000);
+  console.log("⚡️ Bolt app is running!");
 })();
 
 const scheduleInitialMessages = async () => {
@@ -42,32 +42,32 @@ const scheduleMessage = async (user, postAt) => {
       channel: user,
       blocks: [
         {
-          type: 'section',
+          type: "section",
           text: {
-            type: 'mrkdwn',
+            type: "mrkdwn",
             text: `Hey there <@${user}>! It's time to show appreciation and think about all the good things your collegues done recently that made your day to day much better! Is there someone in special you would like to send a feedback to?`,
           },
         },
         {
-          type: 'actions',
+          type: "actions",
           elements: [
             {
-              type: 'button',
+              type: "button",
               text: {
-                type: 'plain_text',
-                text: 'Yes',
+                type: "plain_text",
+                text: "Yes",
                 emoji: true,
               },
-              action_id: 'show_user_select',
+              action_id: "show_user_select",
             },
             {
-              type: 'button',
+              type: "button",
               text: {
-                type: 'plain_text',
-                text: 'No',
+                type: "plain_text",
+                text: "No",
                 emoji: true,
               },
-              action_id: 'no_feedback',
+              action_id: "no_feedback",
             },
           ],
         },
@@ -81,7 +81,7 @@ const scheduleMessage = async (user, postAt) => {
   }
 };
 
-app.action('no_feedback', async ({ body, ack }) => {
+app.action("no_feedback", async ({ body, ack }) => {
   await ack();
   await endSession(body.user);
   // Schedule next session for 3 days
@@ -92,12 +92,12 @@ const endSession = async (user) => {
     channel: user.id,
     blocks: [
       {
-        type: 'divider',
+        type: "divider",
       },
       {
-        type: 'section',
+        type: "section",
         text: {
-          type: 'plain_text',
+          type: "plain_text",
           text: "Ok, I'll check again in a few days.",
           emoji: true,
         },
@@ -107,7 +107,7 @@ const endSession = async (user) => {
   });
 };
 
-app.action('show_user_select', async ({ body, ack }) => {
+app.action("show_user_select", async ({ body, ack }) => {
   await ack();
   await selecteUser(body.user);
   //  Schedule next session for 3 days
@@ -118,39 +118,40 @@ const selecteUser = async (user) => {
     channel: user.id,
     blocks: [
       {
-        type: 'divider',
+        type: "divider",
       },
       {
-        type: 'section',
+        block_id: "user-select-block",
+        type: "section",
         text: {
-          type: 'mrkdwn',
-          text: '*Who is it?*',
+          type: "mrkdwn",
+          text: "*Who is it?*",
         },
         accessory: {
-          type: 'users_select',
+          type: "users_select",
           placeholder: {
-            type: 'plain_text',
-            text: 'Select someone',
+            type: "plain_text",
+            text: "Select someone",
             emoji: true,
           },
-          action_id: 'user-selected',
+          action_id: "user-selected",
         },
       },
     ],
-    text: 'Who is it?',
+    text: "Who is it?",
   });
 };
 
-app.action('user-selected', async ({ body, ack }) => {
+app.action("user-selected", async ({ body, ack }) => {
   await ack();
   console.log(body);
 
   const action = body.actions.find(
-    (action) => action.action_id === 'user-selected'
+    (action) => action.action_id === "user-selected"
   );
 
   console.log(body.message.ts);
-  console.log('ts', body.message_ts);
+  console.log("ts", body.message_ts);
 
   await getFeedback(body.user, action.selected_user);
 
@@ -163,98 +164,100 @@ app.action('user-selected', async ({ body, ack }) => {
 const getFeedback = async (user, selectedUserId) => {
   await app.client.chat.postMessage({
     channel: user.id,
+    text: `What would you like to say to <@${selectedUserId}>`,
     blocks: [
       {
-        type: 'input',
+        type: "input",
+        block_id: "feedback-text-block",
         element: {
-          type: 'plain_text_input',
+          type: "plain_text_input",
           multiline: true,
-          action_id: 'feedback-text-filled',
+          action_id: "feedback-text-filled",
         },
         label: {
-          type: 'plain_text',
+          type: "plain_text",
           text: `What would you like to say to <@${selectedUserId}>`,
           emoji: true,
         },
       },
       {
-        type: 'section',
+        type: "section",
+        block_id: "feedback-options-block",
         text: {
-          type: 'mrkdwn',
+          type: "mrkdwn",
           text: `*Would you like to share this message with <@${selectedUserId}>?*`,
         },
         accessory: {
-          type: 'radio_buttons',
+          type: "radio_buttons",
           initial_option: {
-            value: 'no-value',
+            value: "no-value",
             text: {
-              type: 'plain_text',
-              text: 'No, I want to keep this message private',
+              type: "plain_text",
+              text: "No, I want to keep this message private",
             },
           },
           options: [
             {
               text: {
-                type: 'plain_text',
-                text: 'Yes, I want to share',
+                type: "plain_text",
+                text: "Yes, I want to share",
                 emoji: true,
               },
-              value: 'yes-value',
+              value: "yes-value",
             },
             {
               text: {
-                type: 'plain_text',
-                text: 'No, I want to keep this message private',
+                type: "plain_text",
+                text: "No, I want to keep this message private",
                 emoji: true,
               },
-              value: 'no-value',
+              value: "no-value",
             },
           ],
-          action_id: 'share-radio-action',
+          action_id: "share-radio-action",
         },
       },
       {
-        type: 'actions',
+        type: "actions",
         elements: [
           {
-            type: 'button',
+            type: "button",
             text: {
-              type: 'plain_text',
-              text: 'Send more feedback',
+              type: "plain_text",
+              text: "Send more feedback",
               emoji: true,
             },
-            value: 'click_me_123',
-            action_id: 'restart-cicle',
+            value: selectedUserId,
+            action_id: "restart-cicle",
           },
           {
-            type: 'button',
+            type: "button",
             text: {
-              type: 'plain_text',
-              text: 'Done',
+              type: "plain_text",
+              text: "Done",
               emoji: true,
             },
-            value: 'click_me_123',
-            action_id: 'finish-cicle',
+            value: selectedUserId,
+            action_id: "finish-cycle",
           },
         ],
       },
     ],
-    text: `What would you like to say to <@${selectedUserId}>`,
   });
 };
 
-app.action('share-radio-action', async ({ body, ack }) => {
+app.action("share-radio-action", async ({ body, ack }) => {
   await ack();
 });
 
-app.action('restart-cicle', async ({ body, ack }) => {
+app.action("restart-cicle", async ({ body, ack }) => {
   await ack();
-  console.log('restart', body.state);
+  console.log("restart", body.state);
   // Get the typed feedback and send to selected_user (check if something was typed)
   // Modify text area to show the feedback as plain text
 
-  console.log('ts', body.message.ts);
-  console.log('body', body);
+  console.log("ts", body.message.ts);
+  console.log("body", body);
 
   // await app.client.chat.update({
   //   channel: body.user.id,
@@ -275,62 +278,94 @@ app.action('restart-cicle', async ({ body, ack }) => {
   selecteUser(body.user);
 });
 
-app.action('finish-cicle', async ({ body, ack }) => {
+app.action("finish-cycle", async ({ body, ack, action }) => {
   await ack();
-  showSendGratz(body.user);
+
+  const userId = action.value;
+  const senderUserId = body.user.id;
+  const message =
+    body.state.values["feedback-text-block"]["feedback-text-filled"].value;
+
+  await sendFeedbackToUser(userId, senderUserId, message);
+  await showSendGratz(body.user);
 });
+
+const sendFeedbackToUser = async (targetUserId, senderUserId, message) => {
+  await app.client.chat.postMessage({
+    channel: targetUserId,
+    text: message,
+    blocks: [
+      {
+        type: "context",
+        elements: [
+          {
+            type: "mrkdwn",
+            text: `<@${senderUserId}> just shared`,
+          },
+        ],
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: message,
+        },
+      },
+    ],
+  });
+};
 
 const showSendGratz = async (user) => {
   await app.client.chat.postMessage({
     channel: user.id,
     blocks: [
       {
-        type: 'divider',
+        type: "divider",
       },
       {
-        type: 'section',
+        type: "section",
         text: {
-          type: 'mrkdwn',
-          text: '*What about sending some Gratz today?*',
+          type: "mrkdwn",
+          text: "*What about sending some Gratz today?*",
         },
       },
       {
-        type: 'actions',
+        type: "actions",
         elements: [
           {
-            type: 'button',
+            type: "button",
             text: {
-              type: 'plain_text',
-              text: 'Send Gratz',
+              type: "plain_text",
+              text: "Send Gratz",
               emoji: true,
             },
-            value: 'click_me_123',
-            url: 'https://getgratz.com/users',
-            action_id: 'send-gratz-action',
+            value: "click_me_123",
+            url: "https://getgratz.com/users",
+            action_id: "send-gratz-action",
           },
           {
-            type: 'button',
+            type: "button",
             text: {
-              type: 'plain_text',
-              text: 'No',
+              type: "plain_text",
+              text: "No",
               emoji: true,
             },
-            value: 'click_me_123',
-            action_id: 'finish-flow',
+            value: "click_me_123",
+            action_id: "finish-flow",
           },
         ],
       },
     ],
-    text: 'What about sending some Gratz today?',
+    text: "What about sending some Gratz today?",
   });
 };
 
-app.action('finish-flow', async ({ body, ack }) => {
+app.action("finish-flow", async ({ body, ack }) => {
   await ack();
   finishFlow(body.user);
 });
 
-app.action('send-gratz-action', async ({ body, ack }) => {
+app.action("send-gratz-action", async ({ body, ack }) => {
   await ack();
   finishFlow(body.user);
 });
@@ -340,17 +375,17 @@ const finishFlow = async (user) => {
     channel: user.id,
     blocks: [
       {
-        type: 'divider',
+        type: "divider",
       },
       {
-        type: 'section',
+        type: "section",
         text: {
-          type: 'mrkdwn',
-          text: 'Thanks for sharing! See you in a few days :wave:',
+          type: "mrkdwn",
+          text: "Thanks for sharing! See you in a few days :wave:",
         },
       },
     ],
-    text: 'Thanks for sharing! See you in a few days :wave:',
+    text: "Thanks for sharing! See you in a few days :wave:",
   });
 };
 
