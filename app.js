@@ -149,10 +149,15 @@ app.action('user-selected', async ({ body, ack }) => {
     (action) => action.action_id === 'user-selected'
   );
 
-  console.log(body);
-  console.log('', body.original_message);
+  console.log(body.message.ts);
+  console.log('ts', body.message_ts);
 
   await getFeedback(body.user, action.selected_user);
+
+  await app.client.chat.delete({
+    channel: body.user.id,
+    ts: body.message.ts,
+  });
 });
 
 const getFeedback = async (user, selectedUserId) => {
@@ -245,6 +250,28 @@ app.action('share-radio-action', async ({ body, ack }) => {
 app.action('restart-cicle', async ({ body, ack }) => {
   await ack();
   console.log('restart', body.state);
+  // Get the typed feedback and send to selected_user (check if something was typed)
+  // Modify text area to show the feedback as plain text
+
+  console.log('ts', body.message.ts);
+  console.log('body', body);
+
+  // await app.client.chat.update({
+  //   channel: body.user.id,
+  //   ts: body.message.ts,
+  //   blocks: [
+  //     {
+  //       type: 'section',
+  //       text: {
+  //         type: 'plain_text',
+  //         text: '<Add the typed feedback here>',
+  //         emoji: true,
+  //       },
+  //     },
+  //   ],
+  //   text: '<Add the typed feedback here>',
+  // });
+
   selecteUser(body.user);
 });
 
@@ -338,3 +365,7 @@ const finishFlow = async (user) => {
 // TODO Schedule next session for 3 days
 
 // Build UI https://app.slack.com/block-kit-builder/T039XU4QXL4
+
+// https://api.slack.com/interactivity/handling#payloads
+//https://slack.dev/bolt-js/concepts#acknowledge
+// https://api.slack.com/interactivity/handling
