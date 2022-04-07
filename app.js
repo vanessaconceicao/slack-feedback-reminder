@@ -1,7 +1,7 @@
-import { config } from 'dotenv';
-import bolt from '@slack/bolt';
+import { config } from "dotenv";
+import bolt from "@slack/bolt";
 
-import { getScheduleTime } from './helper.js';
+import { getNextReminderDate } from "./helper.js";
 
 config();
 
@@ -9,7 +9,7 @@ const PUBLIC_CHANNEL_ID = process.env.SLACK_PUBLIC_CHANNEL_ID;
 
 if (!PUBLIC_CHANNEL_ID) {
   throw new Error(
-    'You need to set the environment variable SLACK_PUBLIC_CHANNEL_ID'
+    "You need to set the environment variable SLACK_PUBLIC_CHANNEL_ID"
   );
 }
 
@@ -23,7 +23,7 @@ const app = new bolt.App({
   // Start your app
 
   await app.start(process.env.PORT || 3000);
-  console.log('⚡️ Bolt app is running!');
+  console.log("⚡️ Bolt app is running!");
 })();
 
 const scheduleInitialMessages = async () => {
@@ -33,7 +33,7 @@ const scheduleInitialMessages = async () => {
     console.log(users);
 
     for (const user of users) {
-      scheduleMessage(user.id);
+      scheduleMessage(user);
     }
   } catch (error) {
     console.log(error);
@@ -43,44 +43,44 @@ const scheduleInitialMessages = async () => {
 scheduleInitialMessages();
 
 const scheduleMessage = async (user, postAt) => {
-  const scheduleTime = postAt || getScheduleTime();
+  const scheduleTime = postAt || getNextReminderDate(user.tz_offset);
 
   try {
     await app.client.chat.scheduleMessage({
-      channel: user,
+      channel: user.id,
       blocks: [
         {
-          type: 'section',
+          type: "section",
           text: {
-            type: 'mrkdwn',
-            text: `Hey there <@${user}>! It's time to show appreciation and think about all the good things your collegues done recently that made your day to day much better! Is there someone in special you would like to send a feedback to?`,
+            type: "mrkdwn",
+            text: `Hey there <@${user.id}>! It's time to show appreciation and think about all the good things your collegues done recently that made your day to day much better! Is there someone in special you would like to send a feedback to?`,
           },
         },
         {
-          type: 'actions',
+          type: "actions",
           elements: [
             {
-              type: 'button',
+              type: "button",
               text: {
-                type: 'plain_text',
-                text: 'Yes',
+                type: "plain_text",
+                text: "Yes",
                 emoji: true,
               },
-              action_id: 'show_user_select',
+              action_id: "show_user_select",
             },
             {
-              type: 'button',
+              type: "button",
               text: {
-                type: 'plain_text',
-                text: 'No',
+                type: "plain_text",
+                text: "No",
                 emoji: true,
               },
-              action_id: 'no_feedback',
+              action_id: "no_feedback",
             },
           ],
         },
       ],
-      text: `Hey there <@${user}>! It's time to show appreciation and think about all the good things your collegues done recently that made your day to day much better! Is there someone in special you would like to send a feedback to?`,
+      text: `Hey there <@${user.id}>! It's time to show appreciation and think about all the good things your collegues done recently that made your day to day much better! Is there someone in special you would like to send a feedback to?`,
       post_at: scheduleTime,
     });
   } catch (error) {
@@ -89,10 +89,17 @@ const scheduleMessage = async (user, postAt) => {
   }
 };
 
-app.action('no_feedback', async ({ body, ack }) => {
+app.action("no_feedback", async ({ body, ack }) => {
   await ack();
   await endSession(body.user);
   // Schedule next session for 3 days
+});
+
+// TODO: change for a better command name
+app.command("/give-feedback", async ({ command, ack, respond }) => {
+  await ack();
+
+  await respond(`${command.text}`);
 });
 
 const endSession = async (user) => {
@@ -100,12 +107,12 @@ const endSession = async (user) => {
     channel: user.id,
     blocks: [
       {
-        type: 'divider',
+        type: "divider",
       },
       {
-        type: 'section',
+        type: "section",
         text: {
-          type: 'plain_text',
+          type: "plain_text",
           text: "Ok, I'll check again in a few days.",
           emoji: true,
         },
@@ -115,7 +122,7 @@ const endSession = async (user) => {
   });
 };
 
-app.action('show_user_select', async ({ body, ack }) => {
+app.action("show_user_select", async ({ body, ack }) => {
   await ack();
   await selecteUser(body.user);
   //  Schedule next session for 3 days
@@ -126,40 +133,40 @@ const selecteUser = async (user) => {
     channel: user.id,
     blocks: [
       {
-        type: 'divider',
+        type: "divider",
       },
       {
-        block_id: 'user-select-block',
-        type: 'section',
+        block_id: "user-select-block",
+        type: "section",
         text: {
-          type: 'mrkdwn',
-          text: '*Who is it?*',
+          type: "mrkdwn",
+          text: "*Who is it?*",
         },
         accessory: {
-          type: 'users_select',
+          type: "users_select",
           placeholder: {
-            type: 'plain_text',
-            text: 'Select someone',
+            type: "plain_text",
+            text: "Select someone",
             emoji: true,
           },
-          action_id: 'user-selected',
+          action_id: "user-selected",
         },
       },
     ],
-    text: 'Who is it?',
+    text: "Who is it?",
   });
 };
 
-app.action('user-selected', async ({ body, ack }) => {
+app.action("user-selected", async ({ body, ack }) => {
   await ack();
   console.log(body);
 
   const action = body.actions.find(
-    (action) => action.action_id === 'user-selected'
+    (action) => action.action_id === "user-selected"
   );
 
   console.log(body.message.ts);
-  console.log('ts', body.message_ts);
+  console.log("ts", body.message_ts);
 
   await getFeedback(body.user, action.selected_user);
 
@@ -175,76 +182,76 @@ const getFeedback = async (user, selectedUserId) => {
     text: `What would you like to say to <@${selectedUserId}>?`,
     blocks: [
       {
-        type: 'input',
-        block_id: 'feedback-text-block',
+        type: "input",
+        block_id: "feedback-text-block",
         element: {
-          type: 'plain_text_input',
+          type: "plain_text_input",
           multiline: true,
-          action_id: 'feedback-text-filled',
+          action_id: "feedback-text-filled",
         },
         label: {
-          type: 'plain_text',
+          type: "plain_text",
           text: `What would you like to say to <@${selectedUserId}>`,
           emoji: true,
         },
       },
       {
-        type: 'section',
-        block_id: 'feedback-options-block',
+        type: "section",
+        block_id: "feedback-options-block",
         text: {
-          type: 'mrkdwn',
+          type: "mrkdwn",
           text: `How would you like to share your feedback?`,
         },
         accessory: {
-          type: 'radio_buttons',
+          type: "radio_buttons",
           initial_option: {
-            value: 'private',
+            value: "private",
             text: {
-              type: 'mrkdwn',
+              type: "mrkdwn",
               text: `Share this message with <@${selectedUserId}> only`,
             },
           },
           options: [
             {
               text: {
-                type: 'mrkdwn',
+                type: "mrkdwn",
                 text: `Share this message with <@${selectedUserId}> only`,
               },
-              value: 'private',
+              value: "private",
             },
             {
               text: {
-                type: 'mrkdwn',
-                text: `Share this message with <@${selectedUserId}> and in #general channel`,
+                type: "mrkdwn",
+                text: `Share this message with <@${selectedUserId}> and in <#${PUBLIC_CHANNEL_ID}> channel`,
               },
-              value: 'public',
+              value: "public",
             },
           ],
-          action_id: 'share-radio-action',
+          action_id: "share-radio-action",
         },
       },
       {
-        type: 'actions',
+        type: "actions",
         elements: [
           {
-            type: 'button',
+            type: "button",
             text: {
-              type: 'plain_text',
-              text: 'Send more feedback',
+              type: "plain_text",
+              text: "Send more feedback",
               emoji: true,
             },
             value: selectedUserId,
-            action_id: 'restart-cicle',
+            action_id: "restart-cicle",
           },
           {
-            type: 'button',
+            type: "button",
             text: {
-              type: 'plain_text',
-              text: 'Done',
+              type: "plain_text",
+              text: "Done",
               emoji: true,
             },
             value: selectedUserId,
-            action_id: 'finish-cycle',
+            action_id: "finish-cycle",
           },
         ],
       },
@@ -252,23 +259,23 @@ const getFeedback = async (user, selectedUserId) => {
   });
 };
 
-app.action('share-radio-action', async ({ body, ack }) => {
+app.action("share-radio-action", async ({ body, ack }) => {
   await ack();
 });
 
-app.action('restart-cicle', async ({ body, ack, action }) => {
+app.action("restart-cicle", async ({ body, ack, action }) => {
   await ack();
 
   const userId = action.value;
   const message =
-    body.state.values['feedback-text-block']['feedback-text-filled'].value;
+    body.state.values["feedback-text-block"]["feedback-text-filled"].value;
 
   await sendFeedback(action, body);
 
   selecteUser(body.user);
 });
 
-app.action('finish-cycle', async ({ body, ack, action }) => {
+app.action("finish-cycle", async ({ body, ack, action }) => {
   await ack();
 
   await sendFeedback(action, body);
@@ -281,18 +288,18 @@ const sendFeedbackToUser = async (targetUserId, senderUserId, message) => {
     text: message,
     blocks: [
       {
-        type: 'context',
+        type: "context",
         elements: [
           {
-            type: 'mrkdwn',
-            text: `<@${senderUserId}> just shared`,
+            type: "mrkdwn",
+            text: `<@${senderUserId}> just shared this feedback about you`,
           },
         ],
       },
       {
-        type: 'section',
+        type: "section",
         text: {
-          type: 'mrkdwn',
+          type: "mrkdwn",
           text: message,
         },
       },
@@ -311,18 +318,18 @@ const sendFeedbackToPublicChannel = async (
     text: message,
     blocks: [
       {
-        type: 'context',
+        type: "context",
         elements: [
           {
-            type: 'mrkdwn',
+            type: "mrkdwn",
             text: `<@${senderUserId}> just shared a feedback about <@${targetUserId}>`,
           },
         ],
       },
       {
-        type: 'section',
+        type: "section",
         text: {
-          type: 'mrkdwn',
+          type: "mrkdwn",
           text: message,
         },
       },
@@ -335,52 +342,52 @@ const showSendGratz = async (user) => {
     channel: user.id,
     blocks: [
       {
-        type: 'divider',
+        type: "divider",
       },
       {
-        type: 'section',
+        type: "section",
         text: {
-          type: 'mrkdwn',
-          text: '*What about sending some Gratz today?*',
+          type: "mrkdwn",
+          text: "*What about sending some Gratz today?*",
         },
       },
       {
-        type: 'actions',
+        type: "actions",
         elements: [
           {
-            type: 'button',
+            type: "button",
             text: {
-              type: 'plain_text',
-              text: 'Send Gratz',
+              type: "plain_text",
+              text: "Send Gratz",
               emoji: true,
             },
-            value: 'click_me_123',
-            url: 'https://getgratz.com/users',
-            action_id: 'send-gratz-action',
+            value: "click_me_123",
+            url: "https://getgratz.com/users",
+            action_id: "send-gratz-action",
           },
           {
-            type: 'button',
+            type: "button",
             text: {
-              type: 'plain_text',
-              text: 'No',
+              type: "plain_text",
+              text: "No",
               emoji: true,
             },
-            value: 'click_me_123',
-            action_id: 'finish-flow',
+            value: "click_me_123",
+            action_id: "finish-flow",
           },
         ],
       },
     ],
-    text: 'What about sending some Gratz today?',
+    text: "What about sending some Gratz today?",
   });
 };
 
-app.action('finish-flow', async ({ body, ack }) => {
+app.action("finish-flow", async ({ body, ack }) => {
   await ack();
   finishFlow(body.user);
 });
 
-app.action('send-gratz-action', async ({ body, ack }) => {
+app.action("send-gratz-action", async ({ body, ack }) => {
   await ack();
   finishFlow(body.user);
 });
@@ -390,17 +397,17 @@ const finishFlow = async (user) => {
     channel: user.id,
     blocks: [
       {
-        type: 'divider',
+        type: "divider",
       },
       {
-        type: 'section',
+        type: "section",
         text: {
-          type: 'mrkdwn',
-          text: 'Thanks for sharing! See you in a few days :wave:',
+          type: "mrkdwn",
+          text: "Thanks for sharing! See you in a few days :wave:",
         },
       },
     ],
-    text: 'Thanks for sharing! See you in a few days :wave:',
+    text: "Thanks for sharing! See you in a few days :wave:",
   });
 };
 
@@ -414,18 +421,18 @@ const sendMessage = async (body, userId, message) => {
     channel: body.user.id,
     blocks: [
       {
-        type: 'context',
+        type: "context",
         elements: [
           {
-            type: 'mrkdwn',
+            type: "mrkdwn",
             text: `Here is the message you shared about <@${userId}>`,
           },
         ],
       },
       {
-        type: 'section',
+        type: "section",
         text: {
-          type: 'mrkdwn',
+          type: "mrkdwn",
           text: message,
         },
       },
@@ -438,12 +445,12 @@ const sendFeedback = async (action, body) => {
   const userId = action.value;
   const senderUserId = body.user.id;
   const message =
-    body.state.values['feedback-text-block']['feedback-text-filled'].value;
+    body.state.values["feedback-text-block"]["feedback-text-filled"].value;
   const share =
-    body.state.values['feedback-options-block']['share-radio-action']
+    body.state.values["feedback-options-block"]["share-radio-action"]
       .selected_option.value;
 
-  if (share === 'public') {
+  if (share === "public") {
     await Promise.all([
       sendFeedbackToPublicChannel(
         userId,
@@ -456,7 +463,7 @@ const sendFeedback = async (action, body) => {
     ]);
   }
 
-  if (share === 'private') {
+  if (share === "private") {
     await Promise.all([
       sendFeedbackToUser(userId, senderUserId, message),
       sendMessage(body, userId, message),
@@ -472,5 +479,5 @@ const sendFeedback = async (action, body) => {
 // Build UI https://app.slack.com/block-kit-builder/T039XU4QXL4
 
 // https://api.slack.com/interactivity/handling#payloads
-//https://slack.dev/bolt-js/concepts#acknowledge
+// https://slack.dev/bolt-js/concepts#acknowledge
 // https://api.slack.com/interactivity/handling

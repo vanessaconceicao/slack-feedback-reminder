@@ -4,7 +4,7 @@
   "description": "A Slack bot to remind you to show appreciation to your peers",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "TZ=UTC node app.js"
   },
   "type": "module",
   "author": "",
