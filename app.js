@@ -399,6 +399,7 @@ const sendFeedback = async (action, body) => {
         message,
         PUBLIC_CHANNEL_ID
       ),
+      inviteUserToPublicChannel(userId, PUBLIC_CHANNEL_ID),
       sendFeedbackToUser(userId, senderUserId, message),
       sendMessageToSenderUser(body, userId, message),
     ]);
@@ -410,6 +411,13 @@ const sendFeedback = async (action, body) => {
       sendMessageToSenderUser(body, userId, message),
     ]);
   }
+};
+
+const inviteUserToPublicChannel = async (userId, channelId) => {
+  return await app.client.conversations.invite({
+    channel: channelId,
+    users: userId,
+  });
 };
 
 app.event("team_join", async ({ event }) => {
