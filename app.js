@@ -177,7 +177,7 @@ const getFeedback = async (user, selectedUserId) => {
             type: "button",
             text: {
               type: "plain_text",
-              text: "Send more feedback",
+              text: "Send & share more",
               emoji: true,
             },
             value: selectedUserId,
@@ -187,7 +187,7 @@ const getFeedback = async (user, selectedUserId) => {
             type: "button",
             text: {
               type: "plain_text",
-              text: "Done",
+              text: "Send",
               emoji: true,
             },
             value: selectedUserId,
