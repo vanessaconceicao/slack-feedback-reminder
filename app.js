@@ -6,6 +6,8 @@ config();
 import {
   scheduleReminderMessage,
   removeAllScheduledMessages,
+  scheduleInitialMessages,
+  debugReminders,
 } from "./scheduled-reminder.js";
 
 const PUBLIC_CHANNEL_ID = process.env.SLACK_PUBLIC_CHANNEL_ID;
@@ -27,26 +29,12 @@ const app = new bolt.App({
 
   await app.start(process.env.PORT || 3000);
   console.log("⚡️ Bolt app is running!");
+
+  await debugReminders(app);
+  await removeAllScheduledMessages(app);
+  await scheduleInitialMessages(app);
+  await debugReminders(app);
 })();
-
-const scheduleInitialMessages = async () => {
-  try {
-    const { members } = await app.client.users.list();
-    const users = members?.filter(
-      (user) => !user.is_bot && user.name !== "slackbot" && !user.deleted
-    );
-    console.log(users);
-
-    for (const user of users) {
-      scheduleReminderMessage(app, user);
-    }
-  } catch (error) {
-    console.log(error);
-  }
-};
-
-await removeAllScheduledMessages(app);
-scheduleInitialMessages();
 
 app.action("no_feedback", async ({ body, ack }) => {
   await ack();
