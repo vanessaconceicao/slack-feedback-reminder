@@ -41,6 +41,11 @@ const app = new bolt.App({
   await debugReminders(app);
 })();
 
+app.shortcut("send_feedback_shortcut", async ({ ack, body }) => {
+  await ack();
+  await selecteUser(body.user);
+});
+
 app.action("no_feedback", async ({ body, ack }) => {
   await ack();
   await endSession(body.user);
@@ -85,7 +90,7 @@ const selecteUser = async (user) => {
         type: "section",
         text: {
           type: "mrkdwn",
-          text: "*Who is it?*",
+          text: "*Who do you want to send feedback to?*",
         },
         accessory: {
           type: "users_select",
