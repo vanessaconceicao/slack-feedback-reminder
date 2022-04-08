@@ -28,7 +28,7 @@ export const scheduleInitialMessages = async (app, allowedUserIds) => {
         !user.deleted &&
         !user.is_bot &&
         user.name !== "slackbot" &&
-        allowedUserIds.includes(user.id)
+        (allowedUserIds.length === 0 || allowedUserIds.includes(user.id))
     );
 
     console.group("Scheduling reminder messages...");
