@@ -414,12 +414,4 @@ app.event("team_join", async ({ event }) => {
   }
 });
 
-// TODO: Make bot listen to user entering workspace and leaving to schedule and remove scheduled messages
-// TODO chek if messages will scheduled when Slack Bot is added to workspace
 // TODO: reschedule message in case user doesn't respond Yes or No to first message
-
-// Build UI https://app.slack.com/block-kit-builder/T039XU4QXL4
-
-// https://api.slack.com/interactivity/handling#payloads
-// https://slack.dev/bolt-js/concepts#acknowledge
-// https://api.slack.com/interactivity/handling
