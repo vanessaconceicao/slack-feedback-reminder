@@ -18,22 +18,34 @@ export const debugReminders = async (app) => {
 /**
  * @param {import("@slack/bolt").App} app
  */
-export const scheduleInitialMessages = async (app) => {
+export const scheduleInitialMessages = async (app, allowedUserIds) => {
   const schedules = [];
 
   try {
     const { members } = await app.client.users.list();
     const users = members?.filter(
-      (user) => !user.is_bot && user.name !== "slackbot" && !user.deleted
+      (user) =>
+        !user.deleted &&
+        !user.is_bot &&
+        user.name !== "slackbot" &&
+        allowedUserIds.includes(user.id)
     );
 
-    console.group("List of users");
-    console.log(users);
-    console.groupEnd();
+    console.group("Scheduling reminder messages...");
+    console.log(
+      "Users",
+      users.map((user) => ({
+        id: user.id,
+        name: user.name,
+        real_name: user.real_name,
+        tz_offset: user.tz_offset,
+      }))
+    );
 
     for (const user of users) {
       schedules.push(scheduleReminderMessage(app, user));
     }
+    console.groupEnd();
   } catch (error) {
     console.log(error);
   }
@@ -105,6 +117,9 @@ export const scheduleReminderMessage = async (app, user) => {
       text: `Hey there <@${user.id}>! It's time to show appreciation and think about all the good things your collegues done recently that made your day to day much better! Is there someone in special you would like to send a feedback to?`,
       post_at: scheduleTime,
     });
+    console.log(
+      `Scheduled message for user: ${user.real_name} at ${scheduleTime}`
+    );
   } catch (error) {
     console.log(error);
     console.log(error.data.response_metadata.messages);

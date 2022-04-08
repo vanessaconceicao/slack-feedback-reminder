@@ -11,6 +11,7 @@ import {
 } from "./scheduled-reminder.js";
 
 const PUBLIC_CHANNEL_ID = process.env.SLACK_PUBLIC_CHANNEL_ID;
+const REMINDER_USER_ALLOW_LIST = process.env.SLACK_REMINDER_USER_ALLOW_LIST;
 
 if (!PUBLIC_CHANNEL_ID) {
   throw new Error(
@@ -30,9 +31,13 @@ const app = new bolt.App({
   await app.start(process.env.PORT || 3000);
   console.log("⚡️ Bolt app is running!");
 
+  const reminderUsers = REMINDER_USER_ALLOW_LIST.split(",")
+    .map((user) => user.trim())
+    .filter((user) => !!user);
+
   await debugReminders(app);
   await removeAllScheduledMessages(app);
-  await scheduleInitialMessages(app);
+  await scheduleInitialMessages(app, reminderUsers);
   await debugReminders(app);
 })();
 
@@ -99,14 +104,10 @@ const selecteUser = async (user) => {
 
 app.action("user-selected", async ({ body, ack }) => {
   await ack();
-  console.log(body);
 
   const action = body.actions.find(
     (action) => action.action_id === "user-selected"
   );
-
-  console.log(body.message.ts);
-  console.log("ts", body.message_ts);
 
   await getFeedback(body.user, action.selected_user);
 
