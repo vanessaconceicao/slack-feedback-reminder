@@ -405,14 +405,14 @@ const sendFeedback = async (action, body) => {
   }
 };
 
-app.event("team_join", async ({ event, client, logger }) => {
+app.event("team_join", async ({ event }) => {
   try {
-    const resp = await scheduleMessage(event.user);
-    console.log("resp", resp);
+    await scheduleReminderMessage(app, event.user);
   } catch (error) {
     console.log(error);
   }
 });
+
 // TODO: Make bot listen to user entering workspace and leaving to schedule and remove scheduled messages
 
 // TODO chek if messages will scheduled when Slack Bot is added to workspace
