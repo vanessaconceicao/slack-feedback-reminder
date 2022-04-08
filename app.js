@@ -385,6 +385,7 @@ const sendMessageToSenderUser = async (body, userId, message) => {
 const sendFeedback = async (action, body) => {
   const userId = action.value;
   const senderUserId = body.user.id;
+  console.log(body);
   const message =
     body.state.values["feedback-text-block"]["feedback-text-filled"].value;
   const share =
@@ -399,7 +400,7 @@ const sendFeedback = async (action, body) => {
         message,
         PUBLIC_CHANNEL_ID
       ),
-      inviteUserToPublicChannel(userId, PUBLIC_CHANNEL_ID),
+      // inviteUserToPublicChannel(userId, PUBLIC_CHANNEL_ID),
       sendFeedbackToUser(userId, senderUserId, message),
       sendMessageToSenderUser(body, userId, message),
     ]);
