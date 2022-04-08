@@ -39,6 +39,7 @@ const app = new bolt.App({
 app.action("no_feedback", async ({ body, ack }) => {
   await ack();
   await endSession(body.user);
+  await scheduleReminderMessage(app, user);
 });
 
 const endSession = async (user) => {
@@ -59,12 +60,12 @@ const endSession = async (user) => {
     ],
     text: "Ok, I'll check again in a few days.",
   });
-  await scheduleReminderMessage(app, user);
 };
 
 app.action("show_user_select", async ({ body, ack }) => {
   await ack();
   await selecteUser(body.user);
+  await scheduleReminderMessage(app, user);
 });
 
 const selecteUser = async (user) => {
@@ -414,10 +415,8 @@ app.event("team_join", async ({ event }) => {
 });
 
 // TODO: Make bot listen to user entering workspace and leaving to schedule and remove scheduled messages
-
 // TODO chek if messages will scheduled when Slack Bot is added to workspace
-// TODO Consider user timezone to set the schedule time to 6pm
-// TODO Schedule next session for 3 days
+// TODO: reschedule message in case user doesn't respond Yes or No to first message
 
 // Build UI https://app.slack.com/block-kit-builder/T039XU4QXL4
 
