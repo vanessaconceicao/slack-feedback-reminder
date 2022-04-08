@@ -6,11 +6,19 @@ export const getNextReminderDate = (tz_offset = 0) => {
   const today = new Date();
   const nextThursday = new Date(today.getTime());
   nextThursday.setDate(
-    today.getDate() + ((dayOfWeek - today.getDay() + 7) % 7)
+    today.getDate() + ((7 + dayOfWeek - today.getDay()) % 7)
   );
   nextThursday.setHours(hour, minute, 0);
+
+  if (toTimestamp(nextThursday) - tz_offset < toTimestamp(today)) {
+    // in case hour is in the past, add a week
+    nextThursday.setDate(nextThursday.getDate() + 7);
+  }
+
   const nextThursdayDate = nextThursday.getTime() / 1000;
   return Math.round(nextThursdayDate - tz_offset);
 };
 
-export const now = () => Math.round(new Date().getTime() / 1000);
+export const toTimestamp = (date) => Math.round(date.getTime() / 1000);
+
+export const now = () => toTimestamp(new Date());
