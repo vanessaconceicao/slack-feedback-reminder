@@ -12,3 +12,5 @@ export const getNextReminderDate = (tz_offset = 0) => {
   const nextThursdayDate = nextThursday.getTime() / 1000;
   return Math.round(nextThursdayDate - tz_offset);
 };
+
+export const now = () => Math.round(new Date().getTime() / 1000);

@@ -1,9 +1,12 @@
 import { config } from "dotenv";
 import bolt from "@slack/bolt";
 
-import { getNextReminderDate } from "./helper.js";
-
 config();
+
+import {
+  scheduleReminderMessage,
+  removeAllScheduledMessages,
+} from "./scheduled-reminder.js";
 
 const PUBLIC_CHANNEL_ID = process.env.SLACK_PUBLIC_CHANNEL_ID;
 
@@ -29,77 +32,25 @@ const app = new bolt.App({
 const scheduleInitialMessages = async () => {
   try {
     const { members } = await app.client.users.list();
-    const users = members?.filter((user) => !user.is_bot);
+    const users = members?.filter(
+      (user) => !user.is_bot && user.name !== "slackbot" && !user.deleted
+    );
     console.log(users);
 
     for (const user of users) {
-      scheduleMessage(user);
+      scheduleReminderMessage(app, user);
     }
   } catch (error) {
     console.log(error);
   }
 };
 
+await removeAllScheduledMessages(app);
 scheduleInitialMessages();
-
-const scheduleMessage = async (user, postAt) => {
-  const scheduleTime = postAt || getNextReminderDate(user.tz_offset);
-
-  try {
-    await app.client.chat.scheduleMessage({
-      channel: user.id,
-      blocks: [
-        {
-          type: "section",
-          text: {
-            type: "mrkdwn",
-            text: `Hey there <@${user.id}>! It's time to show appreciation and think about all the good things your collegues done recently that made your day to day much better! Is there someone in special you would like to send a feedback to?`,
-          },
-        },
-        {
-          type: "actions",
-          elements: [
-            {
-              type: "button",
-              text: {
-                type: "plain_text",
-                text: "Yes",
-                emoji: true,
-              },
-              action_id: "show_user_select",
-            },
-            {
-              type: "button",
-              text: {
-                type: "plain_text",
-                text: "No",
-                emoji: true,
-              },
-              action_id: "no_feedback",
-            },
-          ],
-        },
-      ],
-      text: `Hey there <@${user.id}>! It's time to show appreciation and think about all the good things your collegues done recently that made your day to day much better! Is there someone in special you would like to send a feedback to?`,
-      post_at: scheduleTime,
-    });
-  } catch (error) {
-    console.log(error);
-    console.log(error.data.response_metadata.messages);
-  }
-};
 
 app.action("no_feedback", async ({ body, ack }) => {
   await ack();
   await endSession(body.user);
-  // Schedule next session for 3 days
-});
-
-// TODO: change for a better command name
-app.command("/give-feedback", async ({ command, ack, respond }) => {
-  await ack();
-
-  await respond(`${command.text}`);
 });
 
 const endSession = async (user) => {
@@ -120,12 +71,12 @@ const endSession = async (user) => {
     ],
     text: "Ok, I'll check again in a few days.",
   });
+  await scheduleReminderMessage(app, user);
 };
 
 app.action("show_user_select", async ({ body, ack }) => {
   await ack();
   await selecteUser(body.user);
-  //  Schedule next session for 3 days
 });
 
 const selecteUser = async (user) => {
