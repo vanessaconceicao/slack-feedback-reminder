@@ -170,7 +170,7 @@ export const scheduleReminderMessage = async (app, user) => {
       post_at: scheduleTime,
     });
     console.log(
-      `Scheduled message for user: ${user.real_name} at ${scheduleTime}`
+      `Scheduled message for user: ${user.name} - ${user.real_name} at ${scheduleTime}`
     );
   } catch (error) {
     console.log(error);
