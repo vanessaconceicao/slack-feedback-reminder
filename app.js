@@ -103,7 +103,7 @@ const selecteUser = async (user) => {
         },
       },
     ],
-    text: "Who is it?",
+    text: "Who do you want to send feedback to?",
   });
 };
 
