@@ -82,7 +82,7 @@ export const scheduleInitialMessages = async (app, allowedUserIds) => {
         (allowedUserIds.length === 0 || allowedUserIds.includes(user.id))
     );
 
-    console.group("Scheduling reminder messages...");
+    console.group(`Scheduling reminder messages for ${users.length} users...`);
     console.log(
       "Users",
       users.map((user) => ({
