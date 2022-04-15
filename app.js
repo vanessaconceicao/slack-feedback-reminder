@@ -49,7 +49,7 @@ app.shortcut("send_feedback_shortcut", async ({ ack, body }) => {
 app.action("no_feedback", async ({ body, ack }) => {
   await ack();
   await endSession(body.user);
-  await scheduleReminderMessage(app, user);
+  await scheduleReminderMessage(app, body.user);
 });
 
 const endSession = async (user) => {
@@ -75,7 +75,7 @@ const endSession = async (user) => {
 app.action("show_user_select", async ({ body, ack }) => {
   await ack();
   await selecteUser(body.user);
-  await scheduleReminderMessage(app, user);
+  await scheduleReminderMessage(app, body.user);
 });
 
 const selecteUser = async (user) => {
