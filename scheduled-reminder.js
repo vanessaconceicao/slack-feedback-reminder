@@ -1,11 +1,36 @@
 import { getNextReminderDate, now } from "./helper.js";
 
 /**
+ * @param {import("@slack/web-api/dist/response")} app
+ */
+export const getAllScheduledMessages = async (app) => {
+  /**
+   * @type {import("@slack/web-api/dist/response/ChatScheduledMessagesListResponse").ScheduledMessage[]}
+   */
+  let messages = [];
+
+  let has_more = true;
+  let next_cursor = "";
+
+  while (has_more) {
+    const response = await app.client.chat.scheduledMessages.list({
+      limit: 100,
+      cursor: !!next_cursor ? next_cursor : undefined,
+    });
+
+    messages = [...messages, ...response.scheduled_messages];
+    next_cursor = response.response_metadata.next_cursor;
+    has_more = !!next_cursor;
+  }
+
+  return messages;
+};
+
+/**
  * @param {import("@slack/bolt").App} app
  */
 export const debugReminders = async (app) => {
-  const response = await app.client.chat.scheduledMessages.list();
-  const messages = response.scheduled_messages;
+  const messages = await getAllScheduledMessages(app);
   console.group(`List of scheduled messages: ${messages.length}`);
   messages.forEach((message) => {
     console.log(
@@ -58,9 +83,7 @@ export const scheduleInitialMessages = async (app, allowedUserIds) => {
  * @param {import("@slack/bolt").App} app
  */
 export const removeAllScheduledMessages = async (app) => {
-  // TODO: check if we need to filter this and we're not deleting all scheduled messages from everyone
-  const response = await app.client.chat.scheduledMessages.list();
-  const messages = response.scheduled_messages;
+  const messages = await getAllScheduledMessages(app);
 
   const deletes = messages
     // we're allowed to delete only scheduled messages that aren't firing in the next 60 seconds
