@@ -1,7 +1,7 @@
 import { getNextReminderDate, now } from "./helper.js";
 
 /**
- * @param {import("@slack/web-api/dist/response")} app
+ * @param {import("@slack/bolt").App} app
  */
 export const getAllScheduledMessages = async (app) => {
   /**
@@ -29,6 +29,32 @@ export const getAllScheduledMessages = async (app) => {
 /**
  * @param {import("@slack/bolt").App} app
  */
+export const getAllMembers = async (app) => {
+  /**
+   * @type {import("@slack/web-api/dist/response/UsersListResponse").Member[]}
+   */
+  let members = [];
+
+  let has_more = true;
+  let next_cursor = "";
+
+  while (has_more) {
+    const response = await app.client.users.list({
+      limit: 100,
+      cursor: !!next_cursor ? next_cursor : undefined,
+    });
+
+    members = [...members, ...response.members];
+    next_cursor = response.response_metadata.next_cursor;
+    has_more = !!next_cursor;
+  }
+
+  return members;
+};
+
+/**
+ * @param {import("@slack/bolt").App} app
+ */
 export const debugReminders = async (app) => {
   const messages = await getAllScheduledMessages(app);
   console.group(`List of scheduled messages: ${messages.length}`);
@@ -47,7 +73,7 @@ export const scheduleInitialMessages = async (app, allowedUserIds) => {
   const schedules = [];
 
   try {
-    const { members } = await app.client.users.list();
+    const members = await getAllMembers(app);
     const users = members?.filter(
       (user) =>
         !user.deleted &&
