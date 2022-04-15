@@ -85,18 +85,21 @@ export const scheduleInitialMessages = async (app, allowedUserIds) => {
 export const removeAllScheduledMessages = async (app) => {
   const messages = await getAllScheduledMessages(app);
 
-  const deletes = messages
-    // we're allowed to delete only scheduled messages that aren't firing in the next 60 seconds
-    .filter((message) => message.post_at > now() + 60)
-    .map((message) => {
-      return app.client.chat.deleteScheduledMessage({
-        channel: message.channel_id,
-        scheduled_message_id: message.id,
-      });
-    });
+  // we're allowed to delete only scheduled messages that aren't firing in the next 60 seconds
+  const messagesToDelete = messages.filter(
+    (message) => message.post_at > now() + 60
+  );
 
-  console.log("Deleting scheduled messages... ", deletes.length);
-  return await Promise.all(deletes);
+  console.log("Deleting scheduled messages... ", messagesToDelete.length);
+
+  for (let message of messagesToDelete) {
+    await app.client.chat.deleteScheduledMessage({
+      channel: message.channel_id,
+      scheduled_message_id: message.id,
+    });
+  }
+
+  return;
 };
 
 export const scheduleReminderMessage = async (app, user) => {
